@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Countdown Timer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0f1e;
+      color: #eef2ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 400;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #4a7abf;
+      margin-bottom: 40px;
+    }
+
+    /* Circle */
+    .ring-wrap {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin: 0 auto 48px;
+    }
+
+    svg {
+      position: absolute;
+      top: 0; left: 0;
+      transform: rotate(-90deg);
+    }
+
+    circle.track {
+      fill: none;
+      stroke: #0f1f3d;
+      stroke-width: 6;
+    }
+
+    circle.progress {
+      fill: none;
+      stroke: #2563eb;
+      stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+
+    circle.progress.urgent {
+      stroke: #3b82f6;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3.5rem;
+      font-weight: 200;
+      letter-spacing: 2px;
+      font-variant-numeric: tabular-nums;
+      color: #a8c4f0;
+      white-space: nowrap;
+    }
+
+    .display.done {
+      color: #60a5fa;
+      font-size: 1.8rem;
+    }
+
+    /* Input row */
+    .input-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .time-field {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .time-field label {
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #2a4a7f;
+    }
+
+    .time-field input {
+      width: 64px;
+      background: #0f1f3d;
+      border: 1px solid #1e3a6e;
+      border-radius: 8px;
+      color: #a8c4f0;
+      font-size: 1.5rem;
+      font-weight: 200;
+      text-align: center;
+      padding: 8px 4px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .time-field input:focus {
+      border-color: #2563eb;
+    }
+
+    .sep {
+      font-size: 2rem;
+      font-weight: 200;
+      color: #2a4a7f;
+      padding-bottom: 18px;
+    }
+
+    /* Buttons */
+    .controls {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+
+    button {
+      padding: 12px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    #startStop {
+      background: #2563eb;
+      color: #fff;
+      min-width: 110px;
+    }
+
+    #startStop:hover { background: #1d4ed8; }
+    #startStop:disabled { background: #0f1f3d; color: #2a4a7f; cursor: default; }
+
+    #reset {
+      background: #0f1f3d;
+      color: #6b9fd4;
+    }
+
+    #reset:hover { background: #172a50; color: #93c5fd; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Timer</h1>
+
+    <div class="ring-wrap">
+      <svg width="300" height="300">
+        <circle class="track" cx="150" cy="150" r="138"/>
+        <circle class="progress" id="ring" cx="150" cy="150" r="138"/>
+      </svg>
+      <div class="display" id="display">00:00</div>
+    </div>
+
+    <div class="input-row">
+      <div class="time-field">
+        <label>hr</label>
+        <input type="number" id="inputH" min="0" max="99" value="0" placeholder="0">
+      </div>
+      <span class="sep">:</span>
+      <div class="time-field">
+        <label>min</label>
+        <input type="number" id="inputM" min="0" max="59" value="5" placeholder="0">
+      </div>
+      <span class="sep">:</span>
+      <div class="time-field">
+        <label>sec</label>
+        <input type="number" id="inputS" min="0" max="59" value="0" placeholder="0">
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="startStop">Start</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    const CIRCUMFERENCE = 2 * Math.PI * 138;
+
+    const ring = document.getElementById('ring');
+    const display = document.getElementById('display');
+    const startStop = document.getElementById('startStop');
+    const resetBtn = document.getElementById('reset');
+    const inputH = document.getElementById('inputH');
+    const inputM = document.getElementById('inputM');
+    const inputS = document.getElementById('inputS');
+
+    ring.style.strokeDasharray = CIRCUMFERENCE;
+    ring.style.strokeDashoffset = 0;
+
+    let totalSeconds = 0;
+    let remaining = 0;
+    let interval = null;
+    let running = false;
+
+    function format(s) {
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+      return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    }
+
+    function setRing(fraction) {
+      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+    }
+
+    function updateDisplay() {
+      display.textContent = format(remaining);
+      const fraction = totalSeconds > 0 ? remaining / totalSeconds : 0;
+      setRing(fraction);
+      ring.classList.toggle('urgent', remaining <= 10 && remaining > 0);
+    }
+
+    function getInputSeconds() {
+      return (parseInt(inputH.value) || 0) * 3600
+           + (parseInt(inputM.value) || 0) * 60
+           + (parseInt(inputS.value) || 0);
+    }
+
+    function start() {
+      if (remaining === 0) {
+        totalSeconds = getInputSeconds();
+        remaining = totalSeconds;
+        if (remaining === 0) return;
+      }
+      interval = setInterval(() => {
+        remaining--;
+        updateDisplay();
+        if (remaining <= 0) {
+          clearInterval(interval);
+          running = false;
+          startStop.textContent = 'Start';
+          display.classList.add('done');
+          display.textContent = 'Done!';
+          ring.style.strokeDashoffset = CIRCUMFERENCE;
+        }
+      }, 1000);
+      running = true;
+      startStop.textContent = 'Pause';
+      display.classList.remove('done');
+      updateDisplay();
+    }
+
+    function pause() {
+      clearInterval(interval);
+      running = false;
+      startStop.textContent = 'Resume';
+    }
+
+    startStop.addEventListener('click', () => {
+      if (running) pause(); else start();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      clearInterval(interval);
+      running = false;
+      remaining = 0;
+      totalSeconds = 0;
+      startStop.textContent = 'Start';
+      display.classList.remove('done');
+      display.textContent = format(getInputSeconds());
+      setRing(1);
+      ring.classList.remove('urgent');
+    });
+
+    // Preview time as user types
+    [inputH, inputM, inputS].forEach(el => {
+      el.addEventListener('input', () => {
+        if (!running && remaining === 0) {
+          display.textContent = format(getInputSeconds());
+          setRing(1);
+        }
+      });
+    });
+
+    // Init display
+    display.textContent = format(getInputSeconds());
+    setRing(1);
+  </script>
+</body>
+</html>
